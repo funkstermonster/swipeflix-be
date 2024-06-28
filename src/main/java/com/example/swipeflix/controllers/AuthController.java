@@ -11,6 +11,8 @@ import com.example.swipeflix.payload.response.JwtResponse;
 import com.example.swipeflix.payload.response.MessageResponse;
 import com.example.swipeflix.security.jwt.JwtUtils;
 import com.example.swipeflix.security.services.UserDetailsImpl;
+import com.example.swipeflix.services.RoleService;
+import com.example.swipeflix.services.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +21,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -39,10 +42,10 @@ public class AuthController {
     AuthenticationManager authenticationManager;
 
     @Autowired
-    UserRepository userRepository;
+    UserService userService;
 
     @Autowired
-    RoleRepository roleRepository;
+    RoleService roleService;
 
     @Autowired
     PasswordEncoder passwordEncoder;
@@ -73,7 +76,7 @@ public class AuthController {
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@Valid @RequestBody SignUpRequest signUpRequest) {
 
-        if(userRepository.existsByEmail(signUpRequest.getEmail())) {
+        if(userService.existsByEmail(signUpRequest.getEmail())) {
             return ResponseEntity
                     .badRequest()
                     .body(new MessageResponse("Error: Email is already in use!"));
@@ -85,12 +88,12 @@ public class AuthController {
 
         Set<Role> roles = new HashSet<>();
 
-        Role userRole = roleRepository.findByName(ERole.ROLE_USER)
-                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+        Role userRole = roleService.findByName(ERole.ROLE_USER);
+
         roles.add(userRole);
 
         user.setRoles(roles);
-        userRepository.save(user);
+        userService.save(user);
 
         return ResponseEntity.ok(new MessageResponse("User registered successfully"));
     }
