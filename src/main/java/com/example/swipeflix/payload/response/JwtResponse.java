@@ -1,4 +1,4 @@
-package com.example.swipeflix.response;
+package com.example.swipeflix.payload.response;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -20,21 +20,5 @@ public class JwtResponse {
         this.id = id;
         this.email = email;
         this.roles = roles;
-    }
-
-    public String getAccessToken() {
-        return token;
-    }
-
-    public void setAccessToken(String accessToken) {
-        this.token = accessToken;
-    }
-
-    public String getTokenType() {
-        return type;
-    }
-
-    public void setTokenType(String tokenType) {
-        this.type = tokenType;
     }
 }

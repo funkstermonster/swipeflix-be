@@ -1,4 +1,4 @@
-package com.example.swipeflix.response;
+package com.example.swipeflix.payload.response;
 
 import lombok.Getter;
 import lombok.Setter;
