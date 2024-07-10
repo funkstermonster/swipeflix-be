@@ -1,7 +1,10 @@
 package com.example.swipeflix.services;
 
+import com.example.swipeflix.models.EGenre;
 import com.example.swipeflix.models.Genre;
 import com.example.swipeflix.models.Movie;
+import com.example.swipeflix.models.UserPreferences;
+import com.example.swipeflix.repository.GenreRepository;
 import com.example.swipeflix.repository.MovieRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opencsv.CSVReader;
@@ -17,9 +20,13 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -31,8 +38,78 @@ public class MovieService {
 
     @Autowired
     private MovieRepository movieRepository;
+
+    @Autowired
+    private GenreRepository genreRepository;
+
     @Autowired
     private ObjectMapper objectMapper;
+
+    private final Map<Long, UserPreferences> userPreferencesMap = new ConcurrentHashMap<>();
+
+    public Movie handleSwipeRight(Long userId, Long movieId) {
+        Movie movie = movieRepository.findById(movieId).orElseThrow();
+        updateUserPreferences(userId, movie.getGenres(), true);
+        return recommendedMovieFromSameGenre(userId);
+    }
+
+    public Movie handleSwipeLeft(Long userId, Long movieId) {
+        Movie movie = movieRepository.findById(movieId).orElseThrow();
+        updateUserPreferences(userId, movie.getGenres(), false);
+        return recommendMovieFromDifferentGenre(userId);
+    }
+
+    private void updateUserPreferences(Long userId, Set<Genre> genres, boolean isLiked) {
+        UserPreferences userPreferences = userPreferencesMap.computeIfAbsent(userId, k -> new UserPreferences());
+
+        if (isLiked) {
+            userPreferences.addLikedGenres(genres);
+        } else {
+            userPreferences.addDislikedGenres(genres);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public Movie recommendedMovieFromSameGenre(Long userId) {
+        UserPreferences userPreferences = userPreferencesMap.get(userId);
+        if (userPreferences == null) {
+            return null;
+        }
+
+        List<Movie> movies = movieRepository.findAll();
+        Set<Genre> likedEGenres = userPreferences.getLikedEGenres();
+
+        List<Movie> sameGenreMovies = movies.stream()
+                .filter(movie -> !Collections.disjoint(movie.getGenres(), likedEGenres))
+                .collect(Collectors.toList());
+
+        return getRandomMovie(sameGenreMovies);
+    }
+
+    @Transactional(readOnly = true)
+    public Movie recommendMovieFromDifferentGenre(Long userId) {
+        UserPreferences userPreferences = userPreferencesMap.get(userId);
+
+        if (userPreferences == null) {
+            return null;
+        }
+        List<Movie> movies = movieRepository.findAll();
+        Set<Genre> dislikedEGenres = userPreferences.getDislikedEGenres();
+
+        List<Movie> differentGenreMovies = movies.stream()
+                .filter(movie -> Collections.disjoint(movie.getGenres(), dislikedEGenres))
+                .collect(Collectors.toList());
+
+        return getRandomMovie(differentGenreMovies);
+    }
+
+    private Movie getRandomMovie(List<Movie> movies) {
+        if (movies.isEmpty()) {
+            return null;
+        }
+        int randomIndex = (int) (Math.random() * movies.size());
+        return movies.get(randomIndex);
+    }
 
 
     public void readCSVFile() {
@@ -61,7 +138,7 @@ public class MovieService {
                 }
                 LocalDate releaseDate = parseReleaseDate(releaseDateString);
                 String genresJson = record[3];
-                List<String> genres = extractGenres(genresJson);
+                Set<Genre> genres = extractGenres(genresJson);
                 String posterPath = record[11];
                 Integer runtime = parseRuntime(record[16]);
                 Double rating = parseRating(record[22]);
@@ -70,7 +147,17 @@ public class MovieService {
                 // Process each record as needed
                 System.out.println("id: " + id);
 
-                Movie movie = Movie.builder().id(id).imdbId(imdbId).title(title).overview(overview).releaseDate(releaseDate).genres(genres).posterPath(posterPath).runtime(runtime).rating(rating).build();
+                Movie movie = Movie.builder()
+                        .id(id)
+                        .imdbId(imdbId)
+                        .title(title)
+                        .overview(overview)
+                        .releaseDate(releaseDate)
+                        .genres(genres)
+                        .posterPath(posterPath)
+                        .runtime(runtime)
+                        .rating(rating)
+                        .build();
                 movies.add(movie);
             }
             saveEntities(movies);
@@ -125,22 +212,23 @@ public class MovieService {
         }
     }
 
-    private List<String> extractGenres(String input) {
+    @Transactional(readOnly = true)
+    public Set<Genre> extractGenres(String input) {
         Pattern pattern = Pattern.compile("'name': '([A-Za-z ]+)'");
         Matcher matcher = pattern.matcher(input);
-        Set<String> validGenres = Arrays.stream(Genre.values())
-                .map(Enum::name)
-                .collect(Collectors.toSet());
-        return matcher.results()
-                .map(match -> match.group(1).toUpperCase().replace(" ", "_"))
-                .map(genre -> {
-                    if (validGenres.contains(genre)) {
-                        return genre.toLowerCase().replace("_", " ");
-                    } else {
-                        return "UNKNOWN";
-                    }
-                })
-                .map(genre -> genre.substring(0, 1).toUpperCase() + genre.substring(1).toLowerCase())
-                .collect(Collectors.toList());
+        Set<Genre> genres = new HashSet<>();
+
+        while (matcher.find()) {
+            String genreName = matcher.group(1).toUpperCase().replace(" ", "_");
+
+            // Try to find the genre by name in the database
+            Optional<Genre> optionalGenre = genreRepository.findByName(EGenre.valueOf(genreName));
+            optionalGenre.ifPresent(genres::add);
+        }
+
+        return genres;
     }
+
+
+
 }

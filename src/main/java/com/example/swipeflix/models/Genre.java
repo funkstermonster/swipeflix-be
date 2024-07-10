@@ -1,5 +1,18 @@
 package com.example.swipeflix.models;
 
-public enum Genre {
-    ACTION, ADVENTURE, HISTORY, WESTERN, THRILLER, DRAMA, HORROR, COMEDY, ROMANCE, MYSTERY, CRIME, DOCUMENTARY, FANTASY, SCIENCE_FICTION, TV_MOVIE, FAMILY, FOREIGN, ANIMATION, UNKNOWN
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "genres")
+public class Genre {
+    @Id
+    private Long id;
+
+    @Enumerated(EnumType.STRING)
+    private EGenre name;
+
 }
