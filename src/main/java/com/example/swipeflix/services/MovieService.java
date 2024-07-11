@@ -45,71 +45,9 @@ public class MovieService {
     @Autowired
     private ObjectMapper objectMapper;
 
-    private final Map<Long, UserPreferences> userPreferencesMap = new ConcurrentHashMap<>();
 
-    public Movie handleSwipeRight(Long userId, Long movieId) {
-        Movie movie = movieRepository.findById(movieId).orElseThrow();
-        updateUserPreferences(userId, movie.getGenres(), true);
-        return recommendedMovieFromSameGenre(userId);
-    }
 
-    public Movie handleSwipeLeft(Long userId, Long movieId) {
-        Movie movie = movieRepository.findById(movieId).orElseThrow();
-        updateUserPreferences(userId, movie.getGenres(), false);
-        return recommendMovieFromDifferentGenre(userId);
-    }
 
-    private void updateUserPreferences(Long userId, Set<Genre> genres, boolean isLiked) {
-        UserPreferences userPreferences = userPreferencesMap.computeIfAbsent(userId, k -> new UserPreferences());
-
-        if (isLiked) {
-            userPreferences.addLikedGenres(genres);
-        } else {
-            userPreferences.addDislikedGenres(genres);
-        }
-    }
-
-    @Transactional(readOnly = true)
-    public Movie recommendedMovieFromSameGenre(Long userId) {
-        UserPreferences userPreferences = userPreferencesMap.get(userId);
-        if (userPreferences == null) {
-            return null;
-        }
-
-        List<Movie> movies = movieRepository.findAll();
-        Set<Genre> likedEGenres = userPreferences.getLikedEGenres();
-
-        List<Movie> sameGenreMovies = movies.stream()
-                .filter(movie -> !Collections.disjoint(movie.getGenres(), likedEGenres))
-                .collect(Collectors.toList());
-
-        return getRandomMovie(sameGenreMovies);
-    }
-
-    @Transactional(readOnly = true)
-    public Movie recommendMovieFromDifferentGenre(Long userId) {
-        UserPreferences userPreferences = userPreferencesMap.get(userId);
-
-        if (userPreferences == null) {
-            return null;
-        }
-        List<Movie> movies = movieRepository.findAll();
-        Set<Genre> dislikedEGenres = userPreferences.getDislikedEGenres();
-
-        List<Movie> differentGenreMovies = movies.stream()
-                .filter(movie -> Collections.disjoint(movie.getGenres(), dislikedEGenres))
-                .collect(Collectors.toList());
-
-        return getRandomMovie(differentGenreMovies);
-    }
-
-    private Movie getRandomMovie(List<Movie> movies) {
-        if (movies.isEmpty()) {
-            return null;
-        }
-        int randomIndex = (int) (Math.random() * movies.size());
-        return movies.get(randomIndex);
-    }
 
 
     public void readCSVFile() {

@@ -41,7 +41,8 @@ public class User {
     @NotBlank
     private String password;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, optional = false)
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_preferences_id", referencedColumnName = "id")
     private UserPreferences userPreferences;
 
     @ManyToMany(fetch = FetchType.LAZY)

@@ -15,17 +15,16 @@ import java.util.Set;
 public class UserPreferences {
 
     @Id
-    private Long userId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @OneToOne
-    @MapsId
-    @JoinColumn(name = "user_id")
+    @OneToOne(mappedBy = "userPreferences")
     private User user;
 
     @ManyToMany
     @JoinTable(
             name = "user_liked_genres",
-            joinColumns = @JoinColumn(name = "user_id"),
+            joinColumns = @JoinColumn(name = "user_preferences_id"),
             inverseJoinColumns = @JoinColumn(name = "genre_id")
     )
     private Set<Genre> likedEGenres = new HashSet<>();
@@ -33,11 +32,10 @@ public class UserPreferences {
     @ManyToMany
     @JoinTable(
             name = "user_disliked_genres",
-            joinColumns = @JoinColumn(name = "user_id"),
+            joinColumns = @JoinColumn(name = "user_preferences_id"),
             inverseJoinColumns = @JoinColumn(name = "genre_id")
     )
     private Set<Genre> dislikedEGenres = new HashSet<>();
-
 
     public void addLikedGenres(Set<Genre> genres) {
         likedEGenres.addAll(genres);

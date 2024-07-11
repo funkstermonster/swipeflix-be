@@ -3,6 +3,7 @@ package com.example.swipeflix.controllers;
 import com.example.swipeflix.models.ERole;
 import com.example.swipeflix.models.Role;
 import com.example.swipeflix.models.User;
+import com.example.swipeflix.models.UserPreferences;
 import com.example.swipeflix.payload.request.LoginRequest;
 import com.example.swipeflix.payload.request.SignUpRequest;
 import com.example.swipeflix.payload.response.JwtResponse;
@@ -105,6 +106,11 @@ public class AuthController {
         roles.add(userRole);
 
         user.setRoles(roles);
+
+        UserPreferences userPreferences = new UserPreferences();
+        userPreferences.setUser(user);
+        user.setUserPreferences(userPreferences);
+
         userService.save(user);
 
         return ResponseEntity.ok(new MessageResponse("User registered successfully"));
