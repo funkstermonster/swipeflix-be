@@ -27,7 +27,7 @@ public class UserPreferences {
             joinColumns = @JoinColumn(name = "user_preferences_id"),
             inverseJoinColumns = @JoinColumn(name = "genre_id")
     )
-    private Set<Genre> likedEGenres = new HashSet<>();
+    private Set<Genre> likedGenres = new HashSet<>();
 
     @ManyToMany
     @JoinTable(
@@ -35,13 +35,21 @@ public class UserPreferences {
             joinColumns = @JoinColumn(name = "user_preferences_id"),
             inverseJoinColumns = @JoinColumn(name = "genre_id")
     )
-    private Set<Genre> dislikedEGenres = new HashSet<>();
+    private Set<Genre> dislikedGenres = new HashSet<>();
 
     public void addLikedGenres(Set<Genre> genres) {
-        likedEGenres.addAll(genres);
+        likedGenres.addAll(genres);
     }
 
     public void addDislikedGenres(Set<Genre> genres) {
-        dislikedEGenres.addAll(genres);
+        dislikedGenres.addAll(genres);
+    }
+
+    public void removeLikedGenres(Set<Genre> genres) {
+        likedGenres.removeAll(genres);
+    }
+
+    public void removeDislikedGenres(Set<Genre> genres) {
+        dislikedGenres.removeAll(genres);
     }
 }

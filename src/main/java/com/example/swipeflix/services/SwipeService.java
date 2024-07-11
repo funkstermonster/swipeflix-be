@@ -2,7 +2,6 @@ package com.example.swipeflix.services;
 
 import com.example.swipeflix.models.Genre;
 import com.example.swipeflix.models.Movie;
-import com.example.swipeflix.models.User;
 import com.example.swipeflix.models.UserPreferences;
 import com.example.swipeflix.repository.GenreRepository;
 import com.example.swipeflix.repository.MovieRepository;
@@ -31,15 +30,37 @@ public class SwipeService {
 
     private final Map<Long, UserPreferences> userPreferencesMap = new ConcurrentHashMap<>();
 
+    private final Map<Long, Set<Long>> userSwipedMoviesMap = new ConcurrentHashMap<>();
+
 
     public void handleSwipeRight(Long userId, Long movieId) {
         Movie movie = movieRepository.findById(movieId).orElseThrow();
-        updateUserPreferences(userId, movie.getGenres(), true);
+        UserPreferences userPreferences = userPreferencesService.findUserPreferences(userId);
+
+        if (userPreferences.getDislikedGenres().containsAll(movie.getGenres())) {
+            userPreferences.removeDislikedGenres(movie.getGenres());
+        }
+
+        if (!userPreferences.getLikedGenres().containsAll(movie.getGenres())) {
+            userPreferences.addLikedGenres(movie.getGenres());
+        }
+
+        userPreferencesService.saveUserPreferences(userPreferences);
     }
 
     public void handleSwipeLeft(Long userId, Long movieId) {
         Movie movie = movieRepository.findById(movieId).orElseThrow();
-        updateUserPreferences(userId, movie.getGenres(), false);
+        UserPreferences userPreferences = userPreferencesService.findUserPreferences(userId);
+
+        if (userPreferences.getLikedGenres().containsAll(movie.getGenres())) {
+            userPreferences.removeLikedGenres(movie.getGenres());
+        }
+
+        if (!userPreferences.getDislikedGenres().containsAll(movie.getGenres())) {
+            userPreferences.addDislikedGenres(movie.getGenres());
+        }
+
+        userPreferencesService.saveUserPreferences(userPreferences);
     }
 
     private void updateUserPreferences(Long userId, Set<Genre> genres, boolean isLiked) {
@@ -64,10 +85,10 @@ public class SwipeService {
         }
 
         List<Movie> movies = movieRepository.findAll();
-        Set<Genre> likedEGenres = userPreferences.getLikedEGenres();
+        Set<Genre> likedGenres = userPreferences.getLikedGenres();
 
         List<Movie> sameGenreMovies = movies.stream()
-                .filter(movie -> !Collections.disjoint(movie.getGenres(), likedEGenres))
+                .filter(movie -> !Collections.disjoint(movie.getGenres(), likedGenres))
                 .collect(Collectors.toList());
 
         return getRandomMovie(sameGenreMovies);
@@ -81,10 +102,10 @@ public class SwipeService {
             return null;
         }
         List<Movie> movies = movieRepository.findAll();
-        Set<Genre> dislikedEGenres = userPreferences.getDislikedEGenres();
+        Set<Genre> dislikedGenres = userPreferences.getDislikedGenres();
 
         List<Movie> differentGenreMovies = movies.stream()
-                .filter(movie -> Collections.disjoint(movie.getGenres(), dislikedEGenres))
+                .filter(movie -> Collections.disjoint(movie.getGenres(), dislikedGenres))
                 .collect(Collectors.toList());
 
         return getRandomMovie(differentGenreMovies);
