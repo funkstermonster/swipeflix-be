@@ -7,6 +7,7 @@ import lombok.Setter;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Entity
 @Getter
@@ -23,33 +24,41 @@ public class UserPreferences {
 
     @ManyToMany
     @JoinTable(
-            name = "user_liked_genres",
+            name = "user_liked_movies",
             joinColumns = @JoinColumn(name = "user_preferences_id"),
-            inverseJoinColumns = @JoinColumn(name = "genre_id")
+            inverseJoinColumns = @JoinColumn(name = "movie_id")
     )
-    private Set<Genre> likedGenres = new HashSet<>();
+    private Set<Movie> likedMovies = new HashSet<>();
 
     @ManyToMany
     @JoinTable(
-            name = "user_disliked_genres",
+            name = "user_disliked_movies",
             joinColumns = @JoinColumn(name = "user_preferences_id"),
-            inverseJoinColumns = @JoinColumn(name = "genre_id")
+            inverseJoinColumns = @JoinColumn(name = "movie_id")
     )
-    private Set<Genre> dislikedGenres = new HashSet<>();
+    private Set<Movie> dislikedMovies = new HashSet<>();
 
-    public void addLikedGenres(Set<Genre> genres) {
-        likedGenres.addAll(genres);
+    public void addLikedMovie(Movie movie) {
+        likedMovies.add(movie);
     }
 
-    public void addDislikedGenres(Set<Genre> genres) {
-        dislikedGenres.addAll(genres);
+    public void addDislikedMovie(Movie movie) {
+        dislikedMovies.add(movie);
     }
 
-    public void removeLikedGenres(Set<Genre> genres) {
-        likedGenres.removeAll(genres);
+    public void removeLikedMovie(Movie movie) {
+        likedMovies.remove(movie);
     }
 
-    public void removeDislikedGenres(Set<Genre> genres) {
-        dislikedGenres.removeAll(genres);
+    public void removeDislikedMovie(Movie movie) {
+        dislikedMovies.remove(movie);
+    }
+
+    public Set<Genre> getLikedGenres() {
+        return likedMovies.stream().flatMap(movie -> movie.getGenres().stream()).collect(Collectors.toSet());
+    }
+
+    public Set<Genre> getDislikedGenres() {
+        return dislikedMovies.stream().flatMap(movie -> movie.getGenres().stream()).collect(Collectors.toSet());
     }
 }

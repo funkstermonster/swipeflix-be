@@ -60,6 +60,7 @@ public class WebSecurityConfig {
                                 .requestMatchers("/api/test/**").permitAll()
                                 .requestMatchers("/api/movies/**").permitAll()
                                 .requestMatchers("/api/swipe/**").permitAll()
+                                .requestMatchers("/api/recommendations/**").permitAll()
                                 .anyRequest().authenticated()
                 );
 

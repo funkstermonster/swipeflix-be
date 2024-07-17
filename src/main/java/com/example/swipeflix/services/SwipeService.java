@@ -30,19 +30,16 @@ public class SwipeService {
 
     private final Map<Long, UserPreferences> userPreferencesMap = new ConcurrentHashMap<>();
 
-    private final Map<Long, Set<Long>> userSwipedMoviesMap = new ConcurrentHashMap<>();
-
-
     public void handleSwipeRight(Long userId, Long movieId) {
         Movie movie = movieRepository.findById(movieId).orElseThrow();
         UserPreferences userPreferences = userPreferencesService.findUserPreferences(userId);
 
-        if (userPreferences.getDislikedGenres().containsAll(movie.getGenres())) {
-            userPreferences.removeDislikedGenres(movie.getGenres());
+        if (userPreferences.getDislikedMovies().contains(movie)) {
+            userPreferences.removeDislikedMovie(movie);
         }
 
-        if (!userPreferences.getLikedGenres().containsAll(movie.getGenres())) {
-            userPreferences.addLikedGenres(movie.getGenres());
+        if (!userPreferences.getLikedMovies().contains(movie)) {
+            userPreferences.addLikedMovie(movie);
         }
 
         userPreferencesService.saveUserPreferences(userPreferences);
@@ -52,63 +49,68 @@ public class SwipeService {
         Movie movie = movieRepository.findById(movieId).orElseThrow();
         UserPreferences userPreferences = userPreferencesService.findUserPreferences(userId);
 
-        if (userPreferences.getLikedGenres().containsAll(movie.getGenres())) {
-            userPreferences.removeLikedGenres(movie.getGenres());
+        if (userPreferences.getLikedMovies().contains(movie)) {
+            userPreferences.removeLikedMovie(movie);
         }
 
-        if (!userPreferences.getDislikedGenres().containsAll(movie.getGenres())) {
-            userPreferences.addDislikedGenres(movie.getGenres());
+        if (!userPreferences.getDislikedMovies().contains(movie)) {
+            userPreferences.addDislikedMovie(movie);
         }
 
         userPreferencesService.saveUserPreferences(userPreferences);
     }
 
-    private void updateUserPreferences(Long userId, Set<Genre> genres, boolean isLiked) {
+//    private void updateUserPreferences(Long userId, Set<Genre> genres, boolean isLiked) {
+//
+//        UserPreferences userPreferences = userPreferencesService.findUserPreferences(userId);
+//
+//        if (isLiked) {
+//            userPreferences.addLikedGenres(genres);
+//        } else {
+//            userPreferences.addDislikedGenres(genres);
+//        }
+//
+//        userPreferencesService.saveUserPreferences(userPreferences);
+//
+//    }
 
+    @Transactional(readOnly = true)
+    public Movie recommendMovie(Long userId) {
         UserPreferences userPreferences = userPreferencesService.findUserPreferences(userId);
-
-        if (isLiked) {
-            userPreferences.addLikedGenres(genres);
-        } else {
-            userPreferences.addDislikedGenres(genres);
-        }
-
-        userPreferencesService.saveUserPreferences(userPreferences);
-
-    }
-
-    @Transactional(readOnly = true)
-    public Movie recommendedMovieFromSameGenre(Long userId) {
-        UserPreferences userPreferences = userPreferencesMap.get(userId);
         if (userPreferences == null) {
             return null;
         }
 
-        List<Movie> movies = movieRepository.findAll();
+        List<Movie> allMovies = movieRepository.findAll();
         Set<Genre> likedGenres = userPreferences.getLikedGenres();
+        Set<Genre> dislikedGenres = userPreferences.getDislikedGenres();
+        Map<Genre, Long> genreFrequency = calculateGenreFrequency(userPreferences.getLikedMovies());
 
-        List<Movie> sameGenreMovies = movies.stream()
+        List<Movie> recommendedMovies = allMovies.stream()
+                .filter(movie -> !userPreferences.getLikedMovies().contains(movie))
+                .filter(movie -> !userPreferences.getDislikedMovies().contains(movie))
                 .filter(movie -> !Collections.disjoint(movie.getGenres(), likedGenres))
+                .filter(movie -> Collections.disjoint(movie.getGenres(), dislikedGenres))
+                .sorted((m1, m2) -> {
+                    long score1 = calculateGenreMatchScore(m1, genreFrequency);
+                    long score2 = calculateGenreMatchScore(m2, genreFrequency);
+                    return Long.compare(score2, score1);
+                })
                 .collect(Collectors.toList());
 
-        return getRandomMovie(sameGenreMovies);
+        return getRandomMovie(recommendedMovies);
     }
 
-    @Transactional(readOnly = true)
-    public Movie recommendMovieFromDifferentGenre(Long userId) {
-        UserPreferences userPreferences = userPreferencesMap.get(userId);
+    private Map<Genre, Long> calculateGenreFrequency(Set<Movie> likedMovies) {
+        return likedMovies.stream()
+                .flatMap(movie -> movie.getGenres().stream())
+                .collect(Collectors.groupingBy(genre -> genre, Collectors.counting()));
+    }
 
-        if (userPreferences == null) {
-            return null;
-        }
-        List<Movie> movies = movieRepository.findAll();
-        Set<Genre> dislikedGenres = userPreferences.getDislikedGenres();
-
-        List<Movie> differentGenreMovies = movies.stream()
-                .filter(movie -> Collections.disjoint(movie.getGenres(), dislikedGenres))
-                .collect(Collectors.toList());
-
-        return getRandomMovie(differentGenreMovies);
+    private long calculateGenreMatchScore(Movie movie, Map<Genre, Long> genreFrequency) {
+        return movie.getGenres().stream()
+                .mapToLong(genre -> genreFrequency.getOrDefault(genre, 0L))
+                .sum();
     }
 
     private Movie getRandomMovie(List<Movie> movies) {
@@ -119,3 +121,4 @@ public class SwipeService {
         return movies.get(randomIndex);
     }
 }
+
