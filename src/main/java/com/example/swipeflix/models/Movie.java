@@ -41,5 +41,7 @@ public class Movie {
     private Integer runtime;
     private String title;
     private Double rating;
+    private String originalTitle;
+    private String originalLanguage;
 
 }

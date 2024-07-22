@@ -60,7 +60,9 @@ public class AuthController {
                 new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
+        System.out.println("authentication: " + authentication);
         String jwt = jwtUtils.generateJwtToken(authentication);
+        System.out.println("jwt" + jwt);
 
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         List<String> roles = userDetails.getAuthorities().stream()
@@ -71,9 +73,9 @@ public class AuthController {
         ResponseCookie jwtCookie = ResponseCookie.from("token", jwt)
                 .path("/")
                 .maxAge(Duration.ofDays(1))
-                .httpOnly(true) // Set httpOnly to true for security
-                .secure(false) // Set this to true if you are using HTTPS
-                .domain("localhost") // Ensure the domain matches the request origin
+                .httpOnly(false)
+                .secure(false)
+                .domain("localhost")
                 .build();
 
         HttpHeaders responseHeaders = new HttpHeaders();

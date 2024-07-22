@@ -15,7 +15,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-public class AuthTokenFilter  extends OncePerRequestFilter {
+public class AuthTokenFilter extends OncePerRequestFilter {
 
     @Autowired
     private JwtUtils jwtUtils;
@@ -50,6 +50,6 @@ public class AuthTokenFilter  extends OncePerRequestFilter {
             return headerAuth.substring(7);
         }
 
-        return  null;
+        return null;
     }
 }

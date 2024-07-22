@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+import java.util.Random;
+
 @RestController
 @RequestMapping("/api/movies")
 public class MovieController {
@@ -41,6 +44,22 @@ public class MovieController {
             return ResponseEntity.ok(movie);
         } catch (Exception e) {
             return ResponseEntity.status(500).body(null);
+        }
+    }
+
+    @GetMapping("/random")
+    public ResponseEntity<?> getRandomMovie() {
+        try {
+            List<Movie> allMovies = movieRepository.findAll();
+            if (allMovies.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            Random random = new Random();
+            Movie randomMovie = allMovies.get(random.nextInt(allMovies.size()));
+            return ResponseEntity.ok(randomMovie);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error fetching random movie: " + e.getMessage());
         }
     }
 }

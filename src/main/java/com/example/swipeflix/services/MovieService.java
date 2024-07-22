@@ -82,8 +82,10 @@ public class MovieService {
                 Double rating = parseRating(record[22]);
                 Long id = Long.valueOf(record[5]);
                 String imdbId = record[6];
+                String originalTitle = record[8];
+                String originalLanguage = record[7];
                 // Process each record as needed
-                System.out.println("id: " + id);
+                System.out.println("original title " + originalTitle);
 
                 Movie movie = Movie.builder()
                         .id(id)
@@ -95,8 +97,12 @@ public class MovieService {
                         .posterPath(posterPath)
                         .runtime(runtime)
                         .rating(rating)
+                        .originalTitle(originalTitle)
+                        .originalLanguage(originalLanguage)
                         .build();
-                movies.add(movie);
+                if(movie.getOriginalLanguage().equals("en")) {
+                    movies.add(movie);
+                }
             }
             saveEntities(movies);
 
