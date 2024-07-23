@@ -3,7 +3,6 @@ package com.example.swipeflix.services;
 import com.example.swipeflix.models.EGenre;
 import com.example.swipeflix.models.Genre;
 import com.example.swipeflix.models.Movie;
-import com.example.swipeflix.models.UserPreferences;
 import com.example.swipeflix.repository.GenreRepository;
 import com.example.swipeflix.repository.MovieRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,16 +19,12 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -44,10 +39,6 @@ public class MovieService {
 
     @Autowired
     private ObjectMapper objectMapper;
-
-
-
-
 
 
     public void readCSVFile() {
@@ -100,7 +91,7 @@ public class MovieService {
                         .originalTitle(originalTitle)
                         .originalLanguage(originalLanguage)
                         .build();
-                if(movie.getOriginalLanguage().equals("en")) {
+                if (movie.getOriginalLanguage().equals("en")) {
                     movies.add(movie);
                 }
             }
@@ -172,7 +163,6 @@ public class MovieService {
 
         return genres;
     }
-
 
 
 }

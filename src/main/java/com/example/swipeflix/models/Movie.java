@@ -6,6 +6,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -43,5 +44,8 @@ public class Movie {
     private Double rating;
     private String originalTitle;
     private String originalLanguage;
+    @OneToOne
+    @JoinColumn(name = "artists_id")
+    private Artists artists;
 
 }
