@@ -1,5 +1,6 @@
 package com.example.swipeflix;
 
+import com.example.swipeflix.services.ArtistsService;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
