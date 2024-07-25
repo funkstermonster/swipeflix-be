@@ -1,5 +1,6 @@
 package com.example.swipeflix.services;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opencsv.CSVReader;
@@ -15,7 +16,6 @@ import java.util.regex.Pattern;
 public class ArtistsService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
-
 
     public void readCreditsCSVFile() {
         String csvFilePath = "/credits.csv";
@@ -43,20 +43,14 @@ public class ArtistsService {
                     continue;
                 }
 
-                String jsonString = record[0]; // JSON-like string is in the first column
-                String id = record[2]; // ID is in the third column
+                String jsonString = record[0];
+                String id = record[2];
 
                 if (jsonString == null || jsonString.trim().isEmpty()) {
                     System.err.println("Empty JSON string for record: " + String.join(",", record));
                     continue;
                 }
-
-                // Correct the JSON format
                 String correctedJsonString = correctJsonString(jsonString);
-
-                // Print the corrected JSON string for debugging
-                System.out.println("Corrected JSON String: " + correctedJsonString);
-
                 try {
                     // Parse the corrected JSON string
                     JsonNode rootNode = objectMapper.readTree(correctedJsonString);
@@ -88,6 +82,8 @@ public class ArtistsService {
 
                     // Output the ID
                     System.out.println("ID from CSV: " + id);
+                } catch (JsonParseException e) {
+                    System.err.println("Skipping unparsable line");
                 } catch (Exception e) {
                     System.err.println("Failed to parse JSON string: " + correctedJsonString);
                     e.printStackTrace();
@@ -97,38 +93,41 @@ public class ArtistsService {
             e.printStackTrace();
         }
     }
+
     private String correctJsonString(String jsonString) {
-        // Replace single quotes around field names with double quotes
+        // 1. Replace single quotes around field names with double quotes
         jsonString = jsonString.replaceAll("'([a-zA-Z_]+)'(?=\\s*:)", "\"$1\"");
 
-        // Replace single quotes around values with double quotes
-        jsonString = jsonString.replaceAll(":\\s*'([^']*)'", ": \"$1\"");
+        // 2. Handle nested double quotes within string values
+        // Replace `""` with `\"`
+        jsonString = jsonString.replaceAll("\"\"\"", "\\\\\"");
+        jsonString = jsonString.replaceAll("\"\"", "\\\\\"");
 
-        // Escape double quotes within string values, specifically handling 'segment'
-        Pattern pattern = Pattern.compile("(?<=:\")(.*?)(?=\")");
-        Matcher matcher = pattern.matcher(jsonString);
+        // 3. Replace single quotes around values with double quotes
+        // and escape existing double quotes
+        Pattern valuePattern = Pattern.compile(":(\\s*)'([^']*)'");
+        Matcher valueMatcher = valuePattern.matcher(jsonString);
         StringBuffer sb = new StringBuffer();
-        while (matcher.find()) {
-            String replacement = matcher.group();
-            // Only escape double quotes within the string value
-            if (replacement.contains("\"")) {
-                replacement = replacement.replace("\"", "\\\"");
-            }
-            matcher.appendReplacement(sb, replacement);
+
+        while (valueMatcher.find()) {
+            String value = valueMatcher.group(2);
+            // Escape double quotes inside the value
+            String escapedValue = value.replace("\"", "\\\"");
+            valueMatcher.appendReplacement(sb, ": \"" + escapedValue + "\"");
         }
-        matcher.appendTail(sb);
+        valueMatcher.appendTail(sb);
         jsonString = sb.toString();
 
-        // Replace None with null
+        // 4. Replace None with null
         jsonString = jsonString.replaceAll("\\bNone\\b", "null");
 
-        // Remove trailing commas before closing brackets
+        // 5. Remove trailing commas before closing brackets
         jsonString = jsonString.replaceAll(",\\s*(\\}|\\])", "$1");
 
-        // Add commas between objects if missing
-        jsonString = jsonString.replaceAll("\\}\\s*\\{", "},{");
+        // 6. Add commas between objects if missing
+        jsonString = jsonString.replaceAll("}\\s*\\{", "},{");
 
-        // Ensure the string is a valid JSON array
+        // 7. Ensure the string is a valid JSON array
         if (!jsonString.startsWith("[")) {
             jsonString = "[" + jsonString;
         }
@@ -138,4 +137,6 @@ public class ArtistsService {
 
         return jsonString;
     }
+
+
 }
