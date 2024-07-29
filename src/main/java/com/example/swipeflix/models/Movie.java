@@ -45,7 +45,7 @@ public class Movie {
     private String originalTitle;
     private String originalLanguage;
     @OneToOne
-    @JoinColumn(name = "artists_id")
+    @JoinColumn(name = "artist_id")
     private Artists artists;
 
 }

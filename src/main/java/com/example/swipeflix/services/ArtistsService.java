@@ -85,15 +85,20 @@ public class ArtistsService {
                         if (optionalMovie.isPresent()) {
                             movie = optionalMovie.get();
                             artists.setActors(actors);
+                            artistsRepository.save(artists);
                             movie.setArtists(artists);
                             movies.add(movie);
                         }
                     }
                 } catch (JsonParseException e) {
                     System.err.println("Skipping unparsable line");
+                    artists = new Artists();
+                    break;
                 } catch (Exception e) {
                     System.err.println("Failed to parse JSON string: " + correctedJsonString);
                     e.printStackTrace();
+                    artists = new Artists();
+                    break;
                 }
             }
             movieService.saveEntities(movies);
