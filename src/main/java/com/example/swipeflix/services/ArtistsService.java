@@ -1,10 +1,9 @@
 package com.example.swipeflix.services;
 
 import com.example.swipeflix.models.Actor;
-import com.example.swipeflix.models.Artists;
+import com.example.swipeflix.models.Artist;
 import com.example.swipeflix.models.Movie;
 import com.example.swipeflix.repository.ArtistsRepository;
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opencsv.CSVReader;
@@ -13,11 +12,10 @@ import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 public class ArtistsService {
@@ -44,61 +42,50 @@ public class ArtistsService {
 
             boolean isFirstRow = true;
             for (String[] record : records) {
-                Artists artists = new Artists();
                 if (isFirstRow) {
                     isFirstRow = false;
                     continue;
                 }
+
                 if (record.length < 3) {
                     System.err.println("Skipping record due to insufficient columns: " + String.join(",", record));
                     continue;
                 }
+
                 String jsonString = record[0];
                 Long movieId = Long.parseLong(record[2]);
                 Optional<Movie> optionalMovie = movieService.findMovieById(movieId);
-                Movie movie;
-                List<Actor> actors = new ArrayList<>();
                 if (jsonString == null || jsonString.trim().isEmpty()) {
                     System.err.println("Empty JSON string for record: " + String.join(",", record));
                     continue;
                 }
-                String correctedJsonString = correctJsonString(jsonString);
+
                 try {
-                    JsonNode rootNode = objectMapper.readTree(correctedJsonString);
-                    if (rootNode.isArray() && !rootNode.isEmpty()) {
-                        int count = 0;
-                        for (JsonNode node : rootNode) {
-                            if (count >= 4) break;
-                            if (optionalMovie.isEmpty()) break;
-                            String character = node.path("character").asText();
-                            String name = node.path("actor_name").asText();
+                    String correctedJsonString = correctJsonString(jsonString);
+                    List<Actor> actors = parseActors(correctedJsonString);
+                    if (optionalMovie.isPresent() && !actors.isEmpty()) {
+                        Movie movie = optionalMovie.get();
+                        Set<Artist> artistSet = new HashSet<>();
 
-                            System.out.printf("character: %s, actor_name: %s",
-                                    character, name);
-                            count++;
+                        for (Actor actor : actors) {
+                            Optional<Artist> existingArtistOpt = artistsRepository.findByName(actor.getActor_name());
+                            Artist artist = existingArtistOpt.orElseGet(() -> {
+                                Artist newArtist = new Artist();
+                                newArtist.setName(actor.getActor_name());
+                                return newArtist;
+                            });
 
-                            Actor actor = new Actor();
-                            actor.setCharacter_name(character);
-                            actor.setActor_name(name);
-                            actors.add(actor);
+                            artistSet.add(artist);
                         }
-                        if (optionalMovie.isPresent()) {
-                            movie = optionalMovie.get();
-                            artists.setActors(actors);
-                            artistsRepository.save(artists);
-                            movie.setArtists(artists);
-                            movies.add(movie);
-                        }
+
+                        // Save the artists in batch
+                        List<Artist> savedArtists = artistsRepository.saveAll(new ArrayList<>(artistSet));
+                        movie.setArtists(new HashSet<>(savedArtists));
+                        movies.add(movie);
                     }
-                } catch (JsonParseException e) {
-                    System.err.println("Skipping unparsable line");
-                    artists = new Artists();
-                    break;
                 } catch (Exception e) {
-                    System.err.println("Failed to parse JSON string: " + correctedJsonString);
+                    System.err.println("Failed to process record: " + String.join(",", record));
                     e.printStackTrace();
-                    artists = new Artists();
-                    break;
                 }
             }
             movieService.saveEntities(movies);
@@ -107,16 +94,30 @@ public class ArtistsService {
         }
     }
 
+    private List<Actor> parseActors(String jsonString) throws Exception {
+        List<Actor> actors = new ArrayList<>();
+        JsonNode rootNode = objectMapper.readTree(jsonString);
+        if (rootNode.isArray() && !rootNode.isEmpty()) {
+            int count = 0;
+            for (JsonNode node : rootNode) {
+                if (count >= 4) break;
+                String character = node.path("character").asText();
+                String name = node.path("name").asText();
+                Actor actor = new Actor();
+                actor.setCharacter_name(character);
+                actor.setActor_name(name);
+                actors.add(actor);
+                count++;
+            }
+        }
+        return actors;
+    }
+
     private String correctJsonString(String jsonString) {
         // 1. Replace single quotes around field names with double quotes
         jsonString = jsonString.replaceAll("'([a-zA-Z_]+)'(?=\\s*:)", "\"$1\"");
 
-        // 2. Handle nested double quotes within string values
-        // Replace `""` with `\"`
-        jsonString = jsonString.replaceAll("\"\"\"", "\\\\\"");
-        jsonString = jsonString.replaceAll("\"\"", "\\\\\"");
-
-        // 3. Replace single quotes around values with double quotes
+        // 2. Replace single quotes around values with double quotes
         // and escape existing double quotes
         Pattern valuePattern = Pattern.compile(":(\\s*)'([^']*)'");
         Matcher valueMatcher = valuePattern.matcher(jsonString);
@@ -131,16 +132,13 @@ public class ArtistsService {
         valueMatcher.appendTail(sb);
         jsonString = sb.toString();
 
-        // 4. Replace None with null
+        // 3. Replace None with null
         jsonString = jsonString.replaceAll("\\bNone\\b", "null");
 
-        // 5. Remove trailing commas before closing brackets
+        // 4. Remove trailing commas before closing brackets
         jsonString = jsonString.replaceAll(",\\s*(\\}|\\])", "$1");
 
-        // 6. Add commas between objects if missing
-        jsonString = jsonString.replaceAll("}\\s*\\{", "},{");
-
-        // 7. Ensure the string is a valid JSON array
+        // 5. Ensure the string is a valid JSON array
         if (!jsonString.startsWith("[")) {
             jsonString = "[" + jsonString;
         }
@@ -150,6 +148,4 @@ public class ArtistsService {
 
         return jsonString;
     }
-
-
 }

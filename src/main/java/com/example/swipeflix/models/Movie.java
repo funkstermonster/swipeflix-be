@@ -44,8 +44,12 @@ public class Movie {
     private Double rating;
     private String originalTitle;
     private String originalLanguage;
-    @OneToOne
-    @JoinColumn(name = "artist_id")
-    private Artists artists;
+    @ManyToMany
+    @JoinTable(
+            name = "movie_artist",
+            joinColumns = @JoinColumn(name = "movie_id"),
+            inverseJoinColumns = @JoinColumn(name = "artist_id")
+    )
+    private Set<Artist> artists;
 
 }
