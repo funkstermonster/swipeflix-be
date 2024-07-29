@@ -156,13 +156,19 @@ public class MovieService {
         while (matcher.find()) {
             String genreName = matcher.group(1).toUpperCase().replace(" ", "_");
 
-            // Try to find the genre by name in the database
+            // Try to find the genre by actor_name in the database
             Optional<Genre> optionalGenre = genreRepository.findByName(EGenre.valueOf(genreName));
             optionalGenre.ifPresent(genres::add);
         }
 
         return genres;
     }
+
+    public Optional<Movie> findMovieById(Long id) {
+        return movieRepository.findById(id);
+    }
+
+
 
 
 }

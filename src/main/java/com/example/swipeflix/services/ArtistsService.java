@@ -1,14 +1,21 @@
 package com.example.swipeflix.services;
 
+import com.example.swipeflix.models.Actor;
+import com.example.swipeflix.models.Artists;
+import com.example.swipeflix.models.Movie;
+import com.example.swipeflix.repository.ArtistsRepository;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opencsv.CSVReader;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -16,6 +23,11 @@ import java.util.regex.Pattern;
 public class ArtistsService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+    @Autowired
+    private ArtistsRepository artistsRepository;
+    @Autowired
+    private MovieService movieService;
+    private List<Movie> movies = new ArrayList<>();
 
     public void readCreditsCSVFile() {
         String csvFilePath = "/credits.csv";
@@ -30,58 +42,53 @@ public class ArtistsService {
                 return;
             }
 
-            // Skip the header row
             boolean isFirstRow = true;
             for (String[] record : records) {
+                Artists artists = new Artists();
                 if (isFirstRow) {
                     isFirstRow = false;
-                    continue; // Skip the header row
+                    continue;
                 }
-
                 if (record.length < 3) {
                     System.err.println("Skipping record due to insufficient columns: " + String.join(",", record));
                     continue;
                 }
-
                 String jsonString = record[0];
-                String id = record[2];
-
+                Long movieId = Long.parseLong(record[2]);
+                Optional<Movie> optionalMovie = movieService.findMovieById(movieId);
+                Movie movie;
+                List<Actor> actors = new ArrayList<>();
                 if (jsonString == null || jsonString.trim().isEmpty()) {
                     System.err.println("Empty JSON string for record: " + String.join(",", record));
                     continue;
                 }
                 String correctedJsonString = correctJsonString(jsonString);
                 try {
-                    // Parse the corrected JSON string
                     JsonNode rootNode = objectMapper.readTree(correctedJsonString);
-
                     if (rootNode.isArray() && !rootNode.isEmpty()) {
                         int count = 0;
                         for (JsonNode node : rootNode) {
-                            if (count >= 4) break; // Only process the first 4 elements
-
-                            // Extract fields
-                            int castId = node.path("cast_id").asInt();
+                            if (count >= 4) break;
+                            if (optionalMovie.isEmpty()) break;
                             String character = node.path("character").asText();
-                            String creditId = node.path("credit_id").asText();
-                            int gender = node.path("gender").asInt();
-                            int artistId = node.path("id").asInt();
-                            String name = node.path("name").asText();
-                            int order = node.path("order").asInt();
-                            String profilePath = node.path("profile_path").asText(null);
+                            String name = node.path("actor_name").asText();
 
-                            // Print extracted fields
-                            System.out.printf("cast_id: %d, character: %s, credit_id: %s, gender: %d, id: %d, name: %s, order: %d, profile_path: %s%n",
-                                    castId, character, creditId, gender, artistId, name, order, profilePath);
-
+                            System.out.printf("character: %s, actor_name: %s",
+                                    character, name);
                             count++;
-                        }
-                    } else {
-                        System.err.println("Expected JSON array but got something else: " + correctedJsonString);
-                    }
 
-                    // Output the ID
-                    System.out.println("ID from CSV: " + id);
+                            Actor actor = new Actor();
+                            actor.setCharacter_name(character);
+                            actor.setActor_name(name);
+                            actors.add(actor);
+                        }
+                        if (optionalMovie.isPresent()) {
+                            movie = optionalMovie.get();
+                            artists.setActors(actors);
+                            movie.setArtists(artists);
+                            movies.add(movie);
+                        }
+                    }
                 } catch (JsonParseException e) {
                     System.err.println("Skipping unparsable line");
                 } catch (Exception e) {
@@ -89,6 +96,7 @@ public class ArtistsService {
                     e.printStackTrace();
                 }
             }
+            movieService.saveEntities(movies);
         } catch (Exception e) {
             e.printStackTrace();
         }

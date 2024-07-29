@@ -18,6 +18,6 @@ public class Artists {
     Long id;
 
     @ElementCollection
-    List<String> actors;
+    List<Actor> actors;
 
 }
