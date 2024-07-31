@@ -60,22 +60,8 @@ public class SwipeService {
         userPreferencesService.saveUserPreferences(userPreferences);
     }
 
-//    private void updateUserPreferences(Long userId, Set<Genre> genres, boolean isLiked) {
-//
-//        UserPreferences userPreferences = userPreferencesService.findUserPreferences(userId);
-//
-//        if (isLiked) {
-//            userPreferences.addLikedGenres(genres);
-//        } else {
-//            userPreferences.addDislikedGenres(genres);
-//        }
-//
-//        userPreferencesService.saveUserPreferences(userPreferences);
-//
-//    }
-
     @Transactional(readOnly = true)
-    public Movie recommendMovie(Long userId) {
+    public List<Movie> recommendMovie(Long userId) {
         UserPreferences userPreferences = userPreferencesService.findUserPreferences(userId);
         if (userPreferences == null) {
             return null;
@@ -98,7 +84,7 @@ public class SwipeService {
                 })
                 .collect(Collectors.toList());
 
-        return getRandomMovie(recommendedMovies);
+        return getTopMovies(recommendedMovies);
     }
 
     private Map<Genre, Long> calculateGenreFrequency(Set<Movie> likedMovies) {
@@ -119,6 +105,12 @@ public class SwipeService {
         }
         int randomIndex = (int) (Math.random() * movies.size());
         return movies.get(randomIndex);
+    }
+
+    private List<Movie> getTopMovies(List<Movie> movies) {
+        return movies.stream()
+                .limit(5)
+                .collect(Collectors.toList());
     }
 }
 
