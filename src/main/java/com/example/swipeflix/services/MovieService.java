@@ -168,6 +168,10 @@ public class MovieService {
         return movieRepository.findById(id);
     }
 
+    public Movie saveMovie(Movie movie) {
+        return movieRepository.save(movie);
+    }
+
 
 
 

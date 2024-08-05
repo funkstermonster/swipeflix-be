@@ -59,58 +59,5 @@ public class SwipeService {
 
         userPreferencesService.saveUserPreferences(userPreferences);
     }
-
-    @Transactional(readOnly = true)
-    public List<Movie> recommendMovie(Long userId) {
-        UserPreferences userPreferences = userPreferencesService.findUserPreferences(userId);
-        if (userPreferences == null) {
-            return null;
-        }
-
-        List<Movie> allMovies = movieRepository.findAll();
-        Set<Genre> likedGenres = userPreferences.getLikedGenres();
-        Set<Genre> dislikedGenres = userPreferences.getDislikedGenres();
-        Map<Genre, Long> genreFrequency = calculateGenreFrequency(userPreferences.getLikedMovies());
-
-        List<Movie> recommendedMovies = allMovies.stream()
-                .filter(movie -> !userPreferences.getLikedMovies().contains(movie))
-                .filter(movie -> !userPreferences.getDislikedMovies().contains(movie))
-                .filter(movie -> !Collections.disjoint(movie.getGenres(), likedGenres))
-                .filter(movie -> Collections.disjoint(movie.getGenres(), dislikedGenres))
-                .sorted((m1, m2) -> {
-                    long score1 = calculateGenreMatchScore(m1, genreFrequency);
-                    long score2 = calculateGenreMatchScore(m2, genreFrequency);
-                    return Long.compare(score2, score1);
-                })
-                .collect(Collectors.toList());
-
-        return getTopMovies(recommendedMovies);
-    }
-
-    private Map<Genre, Long> calculateGenreFrequency(Set<Movie> likedMovies) {
-        return likedMovies.stream()
-                .flatMap(movie -> movie.getGenres().stream())
-                .collect(Collectors.groupingBy(genre -> genre, Collectors.counting()));
-    }
-
-    private long calculateGenreMatchScore(Movie movie, Map<Genre, Long> genreFrequency) {
-        return movie.getGenres().stream()
-                .mapToLong(genre -> genreFrequency.getOrDefault(genre, 0L))
-                .sum();
-    }
-
-    private Movie getRandomMovie(List<Movie> movies) {
-        if (movies.isEmpty()) {
-            return null;
-        }
-        int randomIndex = (int) (Math.random() * movies.size());
-        return movies.get(randomIndex);
-    }
-
-    private List<Movie> getTopMovies(List<Movie> movies) {
-        return movies.stream()
-                .limit(5)
-                .collect(Collectors.toList());
-    }
 }
 

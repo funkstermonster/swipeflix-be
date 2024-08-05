@@ -2,7 +2,6 @@ package com.example.swipeflix.models;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
@@ -35,6 +34,13 @@ public class Movie {
             inverseJoinColumns = @JoinColumn(name = "genre_id")
     )
     private Set<Genre> genres;
+    @OneToOne
+    @JoinTable(
+            name = "movie_poster",
+            joinColumns = @JoinColumn(name = "movie_id"),
+            inverseJoinColumns = @JoinColumn(name = "poster_id")
+    )
+    private PosterBlob poster;
     private String imdbId;
     @Column(columnDefinition = "TEXT")
     private String overview;
