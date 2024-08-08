@@ -62,6 +62,7 @@ public class WebSecurityConfig {
                                 .requestMatchers("/api/swipe/**").permitAll()
                                 .requestMatchers("/api/recommendations/**").permitAll()
                                 .requestMatchers("/api/artists").permitAll()
+                                .requestMatchers("/api/favorites/**").permitAll()
                                 .anyRequest().authenticated()
                 );
 

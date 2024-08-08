@@ -59,8 +59,4 @@ public class Movie {
     )
     private Set<Artist> artists;
 
-
-    @ManyToMany(mappedBy = "favoriteMovies")
-    private Set<User> favoritedByUsers;
-
 }
