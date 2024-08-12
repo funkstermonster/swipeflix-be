@@ -2,7 +2,6 @@ package com.example.swipeflix.controllers;
 
 import com.example.swipeflix.models.Movie;
 import com.example.swipeflix.services.RecommendationService;
-import com.example.swipeflix.services.SwipeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,13 +17,10 @@ import java.util.List;
 public class RecommendationController {
 
     @Autowired
-    RecommendationService recommendationService;
-
+    private RecommendationService recommendationService;
 
     @GetMapping("/{userId}")
     public ResponseEntity<List<Movie>> getRecommendation(@PathVariable Long userId) {
         return new ResponseEntity<>(recommendationService.recommendMovie(userId), HttpStatus.OK);
     }
-
-
 }

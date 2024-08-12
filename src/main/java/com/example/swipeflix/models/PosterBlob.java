@@ -1,6 +1,7 @@
 package com.example.swipeflix.models;
 
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -16,6 +17,7 @@ public class PosterBlob {
     Long id;
 
     @Lob
+    @Column(columnDefinition = "MEDIUMBLOB")
     String imgData;
 
 

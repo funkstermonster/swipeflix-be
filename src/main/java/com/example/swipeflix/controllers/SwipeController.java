@@ -20,7 +20,6 @@ public class SwipeController {
 
     @PostMapping("/right/{userId}/{movieId}")
     public ResponseEntity<?> swipeRight(@PathVariable Long userId, @PathVariable Long movieId) {
-        System.out.println("swiperight " + userId + "," + movieId);
         try {
             swipeService.handleSwipeRight(userId, movieId);
             return ResponseEntity.ok("ok");

@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Random;
 
@@ -29,63 +30,37 @@ public class MovieController {
     private MovieService movieService;
 
     @Autowired
-    private MovieRepository movieRepository;
-
-    @Autowired
     private PosterService posterService;
 
-    @PutMapping()
+    @PutMapping
     public ResponseEntity<?> saveMovie() {
-        try {
-            movieService.readCSVFile();
-            return ResponseEntity.ok("ok");
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(null);
-        }
+        movieService.readCSVFile();
+        return ResponseEntity.ok("Movies saved successfully");
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getMovieById(@PathVariable Long id) {
-        try {
-            Movie movie = movieService.findMovieById(id).orElse(null);
-            if (movie == null) {
-                return ResponseEntity.notFound().build();
-            }
-            return ResponseEntity.ok(movie);
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(null);
-        }
+        return movieService.findMovieById(id)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/random")
-    public ResponseEntity<?> getRandomMovie() {
-        try {
-            List<Movie> allMovies = movieRepository.findAll();
-            if (allMovies.isEmpty()) {
-                return ResponseEntity.notFound().build();
-            }
-
-            Random random = new Random();
-            Movie randomMovie = allMovies.get(random.nextInt(allMovies.size()));
-            return ResponseEntity.ok(randomMovie);
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error fetching random movie: " + e.getMessage());
-        }
+    public ResponseEntity<List<Movie>> getRandomMovie() {
+        List<Movie> randomMovie = movieService.findRandomMovies(10);
+        return ResponseEntity.ok(randomMovie);
     }
 
     @PatchMapping("/{id}")
     public ResponseEntity<?> patchMovie(@PathVariable Long id, @RequestBody PatchMovieDto patchMovieDto) {
-        Optional<Movie> optionalMovie = movieService.findMovieById(id);
-        Movie movie;
-        if (optionalMovie.isPresent()) {
-            movie = optionalMovie.get();
-            PosterBlob posterBlob = new PosterBlob();
-            posterBlob.setImgData(patchMovieDto.getImgData());
-            posterService.savePoster(posterBlob);
-            movie.setPoster(posterBlob);
-            return new ResponseEntity<Movie>(movieService.saveMovie(movie), HttpStatus.OK);
+        try {
+            Movie updatedMovie = movieService.updateMoviePoster(id, patchMovieDto);
+            return new ResponseEntity<>(updatedMovie, HttpStatus.OK);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
-        return ResponseEntity.status(500).body("Movie not found with id: " + id);
     }
 }
 

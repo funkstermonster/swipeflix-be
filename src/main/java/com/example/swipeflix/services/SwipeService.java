@@ -1,20 +1,14 @@
 package com.example.swipeflix.services;
 
-import com.example.swipeflix.models.Genre;
 import com.example.swipeflix.models.Movie;
 import com.example.swipeflix.models.UserPreferences;
 import com.example.swipeflix.repository.GenreRepository;
 import com.example.swipeflix.repository.MovieRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 @Service
 public class SwipeService {
