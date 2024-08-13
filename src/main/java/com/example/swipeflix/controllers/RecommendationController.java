@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -21,6 +22,11 @@ public class RecommendationController {
 
     @GetMapping("/{userId}")
     public ResponseEntity<List<Movie>> getRecommendation(@PathVariable Long userId) {
-        return new ResponseEntity<>(recommendationService.recommendMovie(userId), HttpStatus.OK);
+        try {
+            List<Movie> recommendedMovies = recommendationService.recommendMovie(userId);
+            return new ResponseEntity<>(recommendedMovies, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(Collections.emptyList(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }

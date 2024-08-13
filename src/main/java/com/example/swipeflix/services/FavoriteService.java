@@ -34,7 +34,7 @@ public class FavoriteService {
             userRepository.save(user);
             return new MessageResponse("Movie successfully added to favorites!");
         }
-        return new MessageResponse("Movie is already in favorites!.");
+        return new MessageResponse("Movie is already in favorites!");
     }
 
     public MessageResponse removeFavorite(Long userId, Long movieId) {
