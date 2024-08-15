@@ -31,6 +31,7 @@ public class WebSecurityConfig {
     public AuthTokenFilter authenticationJwtTokenFilter() {
         return new AuthTokenFilter();
     }
+
     public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
 
@@ -63,6 +64,7 @@ public class WebSecurityConfig {
                                 .requestMatchers("/api/recommendations/**").permitAll()
                                 .requestMatchers("/api/artists").permitAll()
                                 .requestMatchers("/api/favorites/**").permitAll()
+                                .requestMatchers( "/swagger-ui/**", "/swagger-ui.html", "/api-docs/**").permitAll()
                                 .anyRequest().authenticated()
                 );
 
