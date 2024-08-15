@@ -30,11 +30,14 @@ public class FavoriteService {
             User user = userOptional.get();
             Movie movie = movieOptional.get();
 
+            if (user.getFavoriteMovies().contains(movie)) {
+                return new MessageResponse("Movie is already added to your favorites!");
+            }
             user.getFavoriteMovies().add(movie);
             userRepository.save(user);
             return new MessageResponse("Movie successfully added to favorites!");
         }
-        return new MessageResponse("Movie is already in favorites!");
+        return new MessageResponse("User or movie not found!");
     }
 
     public MessageResponse removeFavorite(Long userId, Long movieId) {
